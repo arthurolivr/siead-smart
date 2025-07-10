@@ -1,0 +1,9 @@
+# Ignorar a pasta de cache do Python
+__pycache__/
+
+# Ignorar o arquivo de segredos que contém nossa chave de API
+.streamlit/secrets.toml
+
+# Ignorar arquivos de ambiente virtual (se você usar)
+venv/
+.venv/
