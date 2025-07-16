@@ -1,0 +1,17 @@
+# .streamlit/config.toml
+
+[theme]
+# Cor primária para botões e elementos interativos (um cinza médio/chumbo)
+primaryColor="#9ca3af" 
+
+# Cor de fundo principal da aplicação (um cinza muito escuro, quase preto)
+backgroundColor="#111827" 
+
+# Cor de fundo para elementos como a sidebar e expanders
+secondaryBackgroundColor="#1f2937" 
+
+# Cor do texto principal
+textColor="#ffffff"
+
+# Fonte padrão
+font="sans serif"
