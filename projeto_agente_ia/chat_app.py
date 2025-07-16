@@ -1,64 +1,87 @@
-# chat_app.py (Versão para GEMINI)
-
 import streamlit as st
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.agents import tool, AgentExecutor, create_openai_tools_agent
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from datetime import date, timedelta
-from tools import prever_faturamento_diario, resumir_previsao_longo_prazo
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.callbacks.base import BaseCallbackHandler
+from src.siead_smart.agent.tools import predict_revenue_for_specific_date, summarize_revenue_forecast, predict_revenue_for_tomorrow
+from src.siead_smart.config import get_llm_api_key
+class StreamlitCallbackHandler(BaseCallbackHandler):
+    def __init__(self, container):
+        self.container = container
+        self.steps = []
+    def on_chain_start(self, serialized, inputs, **kwargs):
+        self.steps.clear()
+    def on_tool_start(self, serialized, input_str, **kwargs):
+        self.steps.append(f"▶️ Chamando ferramenta: `{serialized['name']}` com entrada: `{input_str}`")
+        self.container.markdown("\n\n".join(self.steps))
+    def on_tool_end(self, output, **kwargs):
+        self.steps.append(f"✅ Ferramenta retornou: `{output}`")
+        self.container.markdown("\n\n".join(self.steps))
 
-st.set_page_config(page_title="Agente Financeiro (Gemini)", page_icon="✨")
-st.title("🤖 Agente Financeiro Conversacional (Powered by Gemini)")
-st.caption("Inteligência por Google Gemini. Tente 'qual a previsão para amanhã?'")
+st.set_page_config(page_title="SIEAD-SMART | Agente Preditivo", page_icon="🧠", layout="wide")
 
-try:
-    google_api_key = st.secrets["GOOGLE_API_KEY"]
-except (FileNotFoundError, KeyError):
-    st.error("ERRO: Chave de API da Google não encontrada. Crie .streamlit/secrets.toml e adicione sua GOOGLE_API_KEY.")
-    st.stop()
+with st.sidebar:
+    st.title("🧠 SIEAD-SMART")
+    st.subheader("Agente de IA Preditivo")
+    st.markdown("Bem-vindo ao seu assistente inteligente! Este agente usa tecnologia de IA para analisar tendências e padrões nos dados históricos, permitindo realizar previsões de faturamento.")
+    if st.button("🗑️ Limpar Histórico do Chat"):
+        st.session_state.messages = []
+        st.rerun()
+    st.caption("Desenvolvido como um projeto de IA de ponta a ponta.")
 
-@tool
-def prever_faturamento_data_especifica(data: str) -> str:
-    """Use esta ferramenta para prever o faturamento de um único dia específico. A data DEVE ser uma string no formato 'AAAA-MM-DD'."""
-    return prever_faturamento_diario(data)
+@st.cache_resource
+def load_llm():
+    try:
+        api_key = get_llm_api_key("GOOGLE")
+        if not api_key:
+             raise ValueError("Chave de API da Google não encontrada.")
+        return ChatGoogleGenerativeAI(
+            google_api_key=api_key, 
+            model="gemini-1.5-flash", 
+            temperature=0,
+            convert_system_message_to_human=True
+        )
+    except Exception as e:
+        st.error(f"ERRO ao carregar o modelo de linguagem: {e}")
+        st.stop()
 
-@tool
-def resumir_previsao_periodo(dias: int) -> str:
-    """Use esta ferramenta para obter um resumo da previsão de faturamento para um período futuro em dias. Use-a quando o usuário perguntar sobre 'próximos X dias', 'próximo mês' (use 30 dias), etc."""
-    return resumir_previsao_longo_prazo(dias)
+llm = load_llm()
 
-@tool
-def prever_faturamento_amanha() -> str:
-    """Use esta ferramenta quando o usuário perguntar especificamente sobre a previsão de 'amanhã'."""
-    data_amanha = date.today() + timedelta(days=1)
-    return prever_faturamento_diario(data_amanha.strftime('%Y-%m-%d'))
-
-tools = [prever_faturamento_data_especifica, resumir_previsao_periodo, prever_faturamento_amanha]
-
-prompt = ChatPromptTemplate.from_messages([
+tools = [predict_revenue_for_specific_date, summarize_revenue_forecast, predict_revenue_for_tomorrow]
+prompt_template = ChatPromptTemplate.from_messages([
     ("system", "Você é um assistente financeiro amigável e prestativo. Use as ferramentas disponíveis para responder às perguntas do usuário."),
     MessagesPlaceholder(variable_name="chat_history", optional=True), ("human", "{input}"),
     MessagesPlaceholder(variable_name="agent_scratchpad"),
 ])
-
-llm = ChatGoogleGenerativeAI(google_api_key=google_api_key, model="gemini-1.5-flash", temperature=0, convert_system_message_to_human=True)
-agent = create_openai_tools_agent(llm, tools, prompt)
+agent = create_openai_tools_agent(llm, tools, prompt_template)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
+st.header("💬 Converse com seu Agente Financeiro")
 if "messages" not in st.session_state:
     st.session_state.messages = []
+    st.session_state.messages.append({"role": "assistant", "content": "Olá! Em que posso ajudar hoje?"})
 
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("Em que posso ajudar?"):
-    st.session_state.messages.append({"role": "user", "content": prompt})
+if user_prompt := st.chat_input("Sua pergunta aqui..."):
+    st.session_state.messages.append({"role": "user", "content": user_prompt})
     with st.chat_message("user"):
-        st.markdown(prompt)
+        st.markdown(user_prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Pensando com Gemini..."):
-            response = agent_executor.invoke({"input": prompt, "chat_history": st.session_state.messages})
-            st.markdown(response["output"])
+        thinking_container = st.expander("🤔 Raciocínio do Agente...")
+        response_container = st.empty()
+        
+        callback = StreamlitCallbackHandler(thinking_container)
+        
+        with st.spinner("Analisando e consultando os modelos..."):
+            response = agent_executor.invoke(
+                {"input": user_prompt, "chat_history": st.session_state.messages[:-1]},
+                {"callbacks": [callback]}
+            )
+            response_container.markdown(response["output"])
+            
     st.session_state.messages.append({"role": "assistant", "content": response["output"]})
