@@ -1,12 +1,12 @@
 import pandas as pd
 from datetime import date
 from .database import get_db_engine
-from ..config import get_database_config
+
+TABELA = "venda"
 
 def fetch_all_sales() -> pd.DataFrame:
-    db_config = get_database_config()
     engine = get_db_engine()
-    query = f"SELECT data_venda, valor_total FROM {db_config['sales_table']}"
+    query = f"SELECT data_venda, valor_total FROM {TABELA}"
     try:
         with engine.connect() as connection:
             return pd.read_sql(query, connection)
@@ -14,11 +14,10 @@ def fetch_all_sales() -> pd.DataFrame:
         engine.dispose()
 
 def fetch_revenue_for_day(target_date: date) -> float:
-    db_config = get_database_config()
     engine = get_db_engine()
     query = f"""
         SELECT SUM(valor_total) as revenue 
-        FROM {db_config['sales_table']} 
+        FROM {TABELA}
         WHERE data_venda = '{target_date.strftime('%Y-%m-%d')}'
     """
     try:

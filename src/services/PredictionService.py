@@ -1,10 +1,10 @@
-# src/siead_smart/services/prediction_service.py (CORRIGIDO)
+# src/siead_smart/services/PredictionService.py (CORRIGIDO)
 import pandas as pd
 import pickle
 from datetime import date, timedelta
 # MUDANÇA: Importações relativas para "subir um nível"
 from ..config import SHORT_TERM_MODEL_PATH, LONG_TERM_MODEL_PATH
-from ..repositories.sales_repository import fetch_revenue_for_day
+from ..repositories.VendaRepository import fetch_revenue_for_day
 
 # ... (o resto do arquivo permanece o mesmo) ...
 try:

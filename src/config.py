@@ -21,11 +21,10 @@ def get_database_config():
         "password": os.getenv(f"{prefix}_DB_PASSWORD"),
         "host": os.getenv(f"{prefix}_DB_HOST"),
         "database": os.getenv(f"{prefix}_DB_NAME"),
-        "sales_table": os.getenv(f"{prefix}_SALES_TABLE"),
     }
-    
-    if not all(db_config.values()):
-        raise ValueError(f"Configurações de banco de dados para '{prefix}' estão incompletas no arquivo .env")
+
+    #if not all(db_config.values()):
+    #    raise ValueError(f"Configurações de banco de dados para '{prefix}' estão incompletas no arquivo .env")
         
     return db_config
 

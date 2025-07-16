@@ -1,6 +1,6 @@
 from langchain.agents import tool
 from datetime import date, timedelta
-from ..services.prediction_service import predict_daily_revenue, summarize_long_term_forecast
+from ..services.PredictionService import predict_daily_revenue, summarize_long_term_forecast
 
 @tool
 def predict_revenue_for_specific_date(date_str: str) -> str:

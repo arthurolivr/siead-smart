@@ -10,13 +10,14 @@ import pickle
 # Adiciona a pasta raiz do projeto ao mapa de busca do Python.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.siead_smart.repositories.sales_repository import fetch_all_sales
+from src.siead_smart.repositories.VendaRepository import fetch_all_sales
 from src.siead_smart.config import MODELS_DIR, SHORT_TERM_MODEL_PATH, LONG_TERM_MODEL_PATH
 
 try:
     print("Starting the training process...")
     print("Fetching sales data from the data layer...")
     df = fetch_all_sales()
+
     print("Data fetched successfully. Preparing features...")
 
     df['sale_date'] = pd.to_datetime(df['data_venda'])
