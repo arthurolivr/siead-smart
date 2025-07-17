@@ -49,8 +49,20 @@ llm = load_llm()
 
 functions = [tools.predict_revenue_for_specific_date, tools.summarize_revenue_forecast, tools.predict_revenue_for_tomorrow]
 prompt_template = ChatPromptTemplate.from_messages([
-    ("system", "Seu nome é Edu e você é um assistente financeiro amigável e prestativo. Use as ferramentas disponíveis para responder às perguntas do usuário."),
-    MessagesPlaceholder(variable_name="chat_history", optional=True), ("human", "{input}"),
+    ("system",
+     """Você é Edu, um assistente inteligente e prestativo especializado em dados financeiros e acadêmicos. 
+        Seu papel é ajudar usuários a obter informações precisas e claras a partir do banco de dados do sistema educacional da empresa.
+        
+        Use as ferramentas disponíveis para responder perguntas relacionadas a vendas, faturamento, cursos, matrículas, desempenho de alunos, inadimplência, metas, professores e outros dados operacionais.
+        
+        Nunca invente informações. Se não souber, diga que a resposta não está disponível.  
+        Sempre responda com clareza e profissionalismo, adaptando a linguagem para o público-alvo.  
+        Prefira respostas objetivas, com números, períodos e unidade de medida claros.  
+        Use listas ou tabelas quando útil.  
+        Se a pergunta for vaga, peça mais detalhes antes de tentar responder."""
+    ),
+    MessagesPlaceholder(variable_name="chat_history", optional=True),
+    ("human", "{input}"),
     MessagesPlaceholder(variable_name="agent_scratchpad"),
 ])
 agent = create_openai_tools_agent(llm, functions, prompt_template)
