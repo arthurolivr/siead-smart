@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "siead-smart-agent"
+version = "0.1.0"
+description = "Um agente de IA para análise e previsão de dados financeiros."
+authors = [{ name = "Sua Equipe", email = "contato@suaempresa.com" }]
+
+[tool.setuptools.packages.find]
+where = ["src"]
