@@ -1,4 +1,5 @@
 import streamlit as st
+import sys
 from datetime import date, timedelta
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import AgentExecutor, create_openai_tools_agent
@@ -6,7 +7,6 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.callbacks.base import BaseCallbackHandler
 from config import get_llm_api_key
 from agent import tools as agent_tools
-
 
 class StreamlitCallbackHandler(BaseCallbackHandler):
     def __init__(self, container):
@@ -58,10 +58,11 @@ functions = [
     agent_tools.predict_revenue_for_specific_date,
     agent_tools.summarize_revenue_forecast,
     agent_tools.predict_revenue_for_tomorrow,
+    agent_tools.get_registration_fees,
 ]
 prompt_template = ChatPromptTemplate.from_messages([
     ("system",
-     """Você é Edu, um assistente de dados financeiros. Sua tarefa é usar as ferramentas disponíveis para responder às perguntas do usuário.
+     """Você é Edu, sua tarefa é usar as ferramentas disponíveis para responder às perguntas do usuário.
      As ferramentas exigem um parâmetro 'db_name', que pode ser 'FAMART', 'IPB', ou 'TODOS'.
      Você receberá este parâmetro com base na pergunta do usuário. Use-o sempre.
      Se 'db_name' for 'TODOS', isso significa que o usuário quer uma visão consolidada de ambas as instituições.
@@ -83,7 +84,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-def detectar_db_name(texto: str) -> str:
+def detect_db_name(texto: str) -> str:
     texto_lower = texto.lower()
     if "ipb" in texto_lower:
         return "IPB"
@@ -101,7 +102,7 @@ if user_prompt := st.chat_input(
         thinking_container = st.expander("🤔 Raciocínio do Agente...")
         response_container = st.empty()
         callback = StreamlitCallbackHandler(thinking_container)
-        db_context = detectar_db_name(user_prompt)
+        db_context = detect_db_name(user_prompt)
         with st.spinner(f"Analisando dados para: {db_context}..."):
             result = agent_executor.invoke(
                 {"input": user_prompt, "chat_history": st.session_state.messages[:-1], "db_name": db_context},

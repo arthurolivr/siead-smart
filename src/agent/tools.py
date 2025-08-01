@@ -1,3 +1,4 @@
+from repositories.VendaRepository import fetch_registration_fee_by_date
 from langchain.agents import tool
 from datetime import date, timedelta
 from services.PredictionService import predict_daily_revenue, summarize_long_term_forecast
@@ -71,3 +72,37 @@ def predict_revenue_for_tomorrow(db_name: str) -> str:
         return f"Para {instituicao}, a previsão para amanhã ({target_date:%d/%m/%Y}) é de R$ {revenue:,.2f}."
     except Exception as e:
         return f"Ocorreu um erro ao prever para amanhã para {db_name}: {e}"
+    
+@tool
+def get_registration_fees(date_str: str, db_name: str) -> str:
+    """
+    Busca o total e os detalhes das taxas de matrícula pagas em uma data específica.
+    Use esta ferramenta para perguntas sobre 'taxa de matrícula', 'matrículas pagas', ou 'inscrições'.
+
+    Parâmetros:
+    - date_str: Data no formato ISO (YYYY-MM-DD) para a consulta.
+    - db_name: Nome do banco de dados ('FAMART', 'IPB' ou 'TODOS').
+    """
+    try:
+        target_date = date.fromisoformat(date_str)
+        summary_df = fetch_registration_fee_by_date(target_date, db_name)
+        
+        if summary_df.empty:
+            return f"Não foram encontradas taxas de matrícula para {db_name} na data {date_str}."
+        
+        total_value = summary_df['value'].sum()
+        instituicao = f"a instituição {db_name}" if db_name.upper() != 'TODOS' else "o consolidado (Famart + IPB)"
+        
+        details = "\n".join(
+            f"- {row['type']}: {int(row['quantity'])} registros, totalizando R$ {row['value']:,.2f}"
+            for _, row in summary_df.iterrows()
+        )
+        
+        return (
+            f"Relatório de taxas de matrícula para {instituicao} em {target_date:%d/%m/%Y}:\n"
+            f"----------------------------------------\n"
+            f"Valor Total Arrecadado: R$ {total_value:,.2f}\n"
+            f"Detalhes por Conta:\n{details}"
+        )
+    except Exception as e:
+        return f"Ocorreu um erro ao buscar taxas de matrícula para {db_name} na data {date_str}: {e}"
