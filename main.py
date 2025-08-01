@@ -8,8 +8,6 @@ from langchain.callbacks.base import BaseCallbackHandler
 from config import get_llm_api_key
 from agent import tools as agent_tools
 
-print(agent_tools.get_registration_fees("2025-03-31", "FAMART"))  # Example usage to ensure import works
-sys.exit(0)  # Exit after the import test to avoid running the Streamlit app
 class StreamlitCallbackHandler(BaseCallbackHandler):
     def __init__(self, container):
         self.container = container
