@@ -1,4 +1,80 @@
-# siead-smart
+     # siead-smart
+
+Projeto SIEAD‑SMART
+
+Agente de IA para análise e previsão de faturamento consolidado das bases Famart e IPB.
+
+
+🏗️ Arquitetura
+
+siead-smart/
+├── main.py        # Interface e orquestração do agente (Streamlit)
+├── src/
+│   ├── config.py          # Configuração de LLM e caminhos de modelos
+│   ├── agent/
+│   │   └── tools.py       # Ferramentas expostas ao agente (LangChain @tool)
+│   ├── services/
+│   │   └── PredictionService.py  # Lógica de carregamento e previsão (XGBoost + Prophet)
+│   └── repositories/
+│       ├── database.py    # Cria engine SQLAlchemy
+│       └── VendaRepository.py    # Consulta vendas (pandas.read_sql)
+├── models/        # Modelos serializados (.pkl) por instituição
+├── scripts/       # Treinamento e validação: TrainModel.py / ValidateModel.py
+├── .streamlit/    # Configurações de tema e secrets
+├── .env           # Variáveis de ambiente (bancos, LLM_PROVIDER etc.)
+└── requirements.txt  # Dependências Python
+
+
+⚙️ Como treinar os modelos
+
+1. Instale dependências:
+
+pip install -r requirements.txt
+
+
+2. Configure .env:
+
+FAMART_DB_USER=...
+FAMART_DB_PASSWORD=...
+IPB_DB_USER=...
+IPB_DB_PASSWORD=...
+LLM_PROVIDER=GOOGLE  # ou OPENROUTER
+GOOGLE_API_KEY=...
+OPENROUTER_API_KEY=...
+	
+
+3. Execute o script de treino:
+
+python scripts/TrainModel.py --db famart
+python scripts/TrainModel.py --db ipb
+
+
+4. Valide os modelos (opcional):
+
+python scripts/ValidateModel.py --db famart
+python scripts/ValidateModel.py --db ipb
+
+
+
+▶️ Executar a aplicação
+
+streamlit run main.py
+
+
+
+📈 Fluxo de execução
+
+
+1. Usuário insere pergunta via UI.
+
+2. main.py invoca LangChain Agent.
+
+3. Agente chama função em tools.py com db_name = TODOS.
+
+4. PredictionService carrega modelos e gera previsões consolidadas.
+
+5. Resultado exibido no chat com raciocínio detalhado.
+
 
 
 

@@ -1,0 +1,70 @@
+Listagem de caminhos de pasta
+O número de série do volume é C027-FF4E
+C:.
+|   .env
+|   .gitignore
+|   estrutura.txt
+|   main.py
+|   pyproject.toml
+|   README.md
+|   requirements.txt
+|   
++---.streamlit
+|       config.toml
+|       secrets.toml
+|       
++---.vscode
+|       settings.json
+|       
++---models
+|   +---famart
+|   |       prophet_model.pkl
+|   |       short_term_model.pkl
+|   |       
+|   \---ipb
+|           prophet_model.pkl
+|           short_term_model.pkl
+|           
++---scripts
+|       TrainModel.py
+|       ValidateModel.py
+|       
+\---src
+    |   config.py
+    |   __init__.py
+    |   
+    +---agent
+    |   |   tools.py
+    |   |   __init__.py
+    |   |   
+    |   \---__pycache__
+    |           tools.cpython-313.pyc
+    |           __init__.cpython-313.pyc
+    |           
+    +---repositories
+    |   |   database.py
+    |   |   VendaRepository.py
+    |   |   __init__.py
+    |   |   
+    |   \---__pycache__
+    |           database.cpython-313.pyc
+    |           VendaRepository.cpython-313.pyc
+    |           __init__.cpython-313.pyc
+    |           
+    +---services
+    |   |   PredictionService.py
+    |   |   __init__.py
+    |   |   
+    |   \---__pycache__
+    |           PredictionService.cpython-313.pyc
+    |           __init__.cpython-313.pyc
+    |           
+    +---siead_smart_agent.egg-info
+    |       dependency_links.txt
+    |       PKG-INFO
+    |       SOURCES.txt
+    |       top_level.txt
+    |       
+    \---__pycache__
+            config.cpython-313.pyc
+            
