@@ -3,7 +3,11 @@ class BaseRepository:
         self.connection_getter = connection_getter
 
     def execute_query(self, query, params=None):
-        conn = self.connection_getter()
+        try:
+            conn = self.connection_getter()
+        except Exception as e:
+            print(f"Erro ao obter conexão: {e}")
+            raise  # Relevante para continuar a propagar a exceção, se necessário
         cursor = conn.cursor(dictionary=True)
 
         try:

@@ -3,7 +3,7 @@ from datetime import date
 from .base_repository import BaseRepository
 from src.config.database import db_connection_1
 
-table_name = "venda";
+table_name = "venda"
 
 class VendaRepository(BaseRepository):
     def __init__(self):
@@ -25,21 +25,20 @@ class VendaRepository(BaseRepository):
         query = f"""SELECT descricao as type, COUNT(*) as quantity, SUM(pagamento_valor) as value
             FROM (
                 SELECT cb.descricao, l.pagamento_valor, l.pagamento_data
-                FROM siead07.venda v
-                INNER JOIN siead07.lancamento l ON l.venda_id = v.id AND l.plano_de_contas_id = 2
-                INNER JOIN siead07.conta_bancaria cb ON cb.id = l.conta_bancaria_id
+                FROM `siead-07`.venda v
+                INNER JOIN `siead-07`.lancamento l ON l.venda_id = v.id AND l.plano_de_contas_id = 2
+                INNER JOIN `siead-07`.conta_bancaria cb ON cb.id = l.conta_bancaria_id
                 
                 union all
                 
                 SELECT cb.descricao, l.pagamento_valor, l.pagamento_data
-                FROM siead.venda v
-                INNER JOIN siead.lancamento l ON l.venda_id = v.id AND l.plano_de_contas_id = 2
-                INNER JOIN siead.conta_bancaria cb ON cb.id = l.conta_bancaria_id)
+                FROM instituto_siead_maio.venda v
+                INNER JOIN instituto_siead_maio.lancamento l ON l.venda_id = v.id AND l.plano_de_contas_id = 2
+                INNER JOIN instituto_siead_maio.conta_bancaria cb ON cb.id = l.conta_bancaria_id)
                 as t
             WHERE 1 = 1
             AND t.pagamento_data BETWEEN '{date_start}' AND '{date_end}'
             GROUP BY descricao
             """
-
 
         return self.execute_query(query)

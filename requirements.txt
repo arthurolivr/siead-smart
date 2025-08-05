@@ -1,5 +1,5 @@
 pandas
-mysql-connector-python
+mysql-connector-python==8.3.0
 scikit-learn
 prophet
 matplotlib
@@ -12,3 +12,5 @@ langchain-google-genai
 plotly
 openpyxl
 dateparser
+langchain_community
+langchain-openai

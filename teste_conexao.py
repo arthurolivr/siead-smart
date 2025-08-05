@@ -1,11 +1,15 @@
-import mysql.connector
 from dotenv import load_dotenv
 import os
+
+try:
+    import pymysql as mysql
+except ImportError:
+    import mysql.connector as mysql
 
 load_dotenv()
 
 try:
-    conn = mysql.connector.connect(
+    conn = mysql.connect(
         host=os.getenv("DB1_HOST"),
         port=int(os.getenv("DB1_PORT")),
         user=os.getenv("DB1_USER"),
@@ -13,8 +17,9 @@ try:
         database=os.getenv("DB1_DATABASE"),
         ssl_disabled=True
     )
+
     print("✅ Conexão MySQL bem-sucedida!")
     conn.close()
-except mysql.connector.Error as err:
+except Exception as err:
     print("❌ Erro ao conectar no MySQL:")
     print(err)
