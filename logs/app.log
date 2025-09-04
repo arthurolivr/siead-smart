@@ -1,0 +1,20 @@
+2025-09-03 17:17:59,147 - INFO - >>> INÍCIO DA EXECUÇÃO DA FERRAMENTA DE ANÁLISE DE MATRÍCULAS <<<
+2025-09-03 17:17:59,315 - INFO - Analisando período de 2025-03-20 a 2025-03-20 para DB: TODOS, Equipe: None, Agenciador: None
+2025-09-03 17:17:59,525 - ERROR - Erro ao executar a análise de matrículas: 1045 (28000): Access denied for user 'root'@'localhost' (using password: YES)
+2025-09-03 17:18:15,651 - INFO - >>> INÍCIO DA EXECUÇÃO DA FERRAMENTA DE ANÁLISE DE MATRÍCULAS <<<
+2025-09-03 17:18:15,654 - INFO - Analisando período de 2025-03-20 a 2025-03-20 para DB: TODOS, Equipe: None, Agenciador: None
+2025-09-03 17:18:15,658 - ERROR - Erro ao executar a análise de matrículas: 1045 (28000): Access denied for user 'root'@'localhost' (using password: YES)
+2025-09-03 17:18:56,017 - INFO - >>> INÍCIO DA EXECUÇÃO DA FERRAMENTA DE ANÁLISE DE MATRÍCULAS <<<
+2025-09-03 17:18:56,020 - INFO - Analisando período de 2025-03-15 a 2025-03-15 para DB: TODOS, Equipe: None, Agenciador: None
+2025-09-03 17:18:56,025 - ERROR - Erro ao executar a análise de matrículas: 1045 (28000): Access denied for user 'root'@'localhost' (using password: YES)
+2025-09-03 17:21:10,823 - INFO - >>> INÍCIO DA EXECUÇÃO DA FERRAMENTA DE ANÁLISE DE MATRÍCULAS <<<
+2025-09-03 17:21:10,883 - INFO - Analisando período de 2025-01-01 a 2025-01-01 para DB: TODOS, Equipe: None, Agenciador: None
+2025-09-03 17:21:10,955 - ERROR - Erro ao executar a análise de matrículas: 1045 (28000): Access denied for user 'root'@'localhost' (using password: YES)
+2025-09-03 17:23:36,244 - INFO - >>> INÍCIO DA EXECUÇÃO DA FERRAMENTA DE ANÁLISE DE MATRÍCULAS <<<
+2025-09-03 17:23:36,299 - INFO - Analisando período de 2025-01-01 a 2025-01-01 para DB: TODOS, Equipe: None, Agenciador: None
+2025-09-03 17:24:15,065 - INFO - >>> INÍCIO DA EXECUÇÃO DA FERRAMENTA DE ANÁLISE DE MATRÍCULAS <<<
+2025-09-03 17:24:15,068 - INFO - Analisando período de 2025-03-15 a 2025-03-15 para DB: TODOS, Equipe: None, Agenciador: None
+2025-09-03 17:25:15,600 - INFO - >>> INÍCIO DA EXECUÇÃO DA FERRAMENTA DE ANÁLISE DE MATRÍCULAS <<<
+2025-09-03 17:25:15,603 - INFO - Analisando período de 2025-03-14 a 2025-03-14 para DB: TODOS, Equipe: None, Agenciador: None
+2025-09-03 17:25:59,130 - INFO - >>> INÍCIO DA EXECUÇÃO DA FERRAMENTA DE ANÁLISE DE MATRÍCULAS <<<
+2025-09-03 17:25:59,134 - INFO - Analisando período de 2025-03-14 a 2025-03-14 para DB: TODOS, Equipe: None, Agenciador: None

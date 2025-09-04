@@ -2,43 +2,73 @@ import pandas as pd
 from datetime import date
 from .base_repository import BaseRepository
 from src.config.database import db_connection_1
+from dotenv import load_dotenv
+import os
 
-table_name = "venda"
+load_dotenv()
+database_famart = os.getenv(f"DB1_DATABASE")
+database_ipb = os.getenv(f"DB2_DATABASE")
+
 
 class VendaRepository(BaseRepository):
     def __init__(self):
         super().__init__(db_connection_1.connect)
 
-    def get_all_users(self):
-        query = "SELECT * FROM usuario LIMIT 1"
-        return self.execute_query(query)
+    def _get_base_enrollments_query(self, db_name: str):
+        """
+        Query base REUTILIZÁVEL que busca os dados essenciais de matrículas,
+        incluindo pagamento, equipe e agenciador. Fica em um método privado.
+        """
+        return f"""
+            SELECT
+                cb.descricao,
+                l.pagamento_valor,
+                l.pagamento_data,
+                e.nome AS nome_equipe,
+                a.nome AS nome_agenciador
+            FROM {db_name}.venda v
+            INNER JOIN {db_name}.lancamento l ON l.venda_id = v.id AND l.plano_de_contas_id = 2
+            INNER JOIN {db_name}.conta_bancaria cb ON cb.id = l.conta_bancaria_id
+            INNER JOIN {db_name}.usuario u ON v.vendedor_id = u.id
+            INNER JOIN {db_name}.agenciador a ON a.usuario_id = u.id
+            LEFT JOIN {db_name}.equipe_usuario eu ON eu.usuario_id = u.id
+            LEFT JOIN {db_name}.equipe e ON e.id = eu.equipe_id
+        """
 
-    def fetch_all_sales(self, db_name: str) -> pd.DataFrame:
-        query = f"SELECT data_venda, valor_total FROM {table_name}"
-        return self.execute_query(query)
-
-    def fetch_revenue_for_day(self, target_date: date, db_name: str) -> float:
-        query = f"SELECT SUM(valor_total) as revenue FROM {table_name} WHERE data_venda = '{target_date.strftime('%Y-%m-%d')}'"
-        return self.execute_query(query)
-
-    def fetch_registration_fee_by_date(self, date_start: date, date_end: date, db_name: str):
-        query = f"""SELECT descricao as type, COUNT(*) as quantity, SUM(pagamento_valor) as value
-            FROM (
-                SELECT cb.descricao, l.pagamento_valor, l.pagamento_data
-                FROM `siead-07`.venda v
-                INNER JOIN `siead-07`.lancamento l ON l.venda_id = v.id AND l.plano_de_contas_id = 2
-                INNER JOIN `siead-07`.conta_bancaria cb ON cb.id = l.conta_bancaria_id
-                
-                union all
-                
-                SELECT cb.descricao, l.pagamento_valor, l.pagamento_data
-                FROM instituto_siead_maio.venda v
-                INNER JOIN instituto_siead_maio.lancamento l ON l.venda_id = v.id AND l.plano_de_contas_id = 2
-                INNER JOIN instituto_siead_maio.conta_bancaria cb ON cb.id = l.conta_bancaria_id)
-                as t
-            WHERE 1 = 1
-            AND t.pagamento_data BETWEEN '{date_start}' AND '{date_end}'
-            GROUP BY descricao
+    def fetch_enrollments(self, date_start: date, date_end: date, db_name: str, team_name: str | None = None,
+                          agent_name: str | None = None) -> list[dict]:
+        """
+        Busca dados brutos de matrículas em um período, com filtros opcionais.
+        Esta função busca os dados detalhados para serem processados pela camada de serviço.
+        """
+        if db_name.upper() == "IPB":
+            subquery = self._get_base_enrollments_query(database_ipb)
+        elif db_name.upper() == "FAMART":
+            subquery = self._get_base_enrollments_query(database_famart)
+        else:
+            subquery = f"""
+                ({self._get_base_enrollments_query(database_famart)})
+                UNION ALL
+                ({self._get_base_enrollments_query(database_ipb)})
             """
 
-        return self.execute_query(query)
+        where_conditions = ["t.pagamento_data BETWEEN %(date_start)s AND %(date_end)s"]
+        params = {'date_start': date_start, 'date_end': date_end}
+
+        if team_name:
+            where_conditions.append("t.nome_equipe = %(team_name)s")
+            params['team_name'] = team_name
+
+        if agent_name:
+            where_conditions.append("t.nome_agenciador = %(agent_name)s")
+            params['agent_name'] = agent_name
+
+        where_clause = " AND ".join(where_conditions)
+
+        query = f"""
+            SELECT *
+            FROM ({subquery}) AS t
+            WHERE {where_clause}
+        """
+
+        return self.execute_query(query, params)
