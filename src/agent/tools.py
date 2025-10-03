@@ -1,88 +1,69 @@
 import pandas as pd
 from langchain.agents import tool
 from src.utils.app_util import parse_date_range
-from src.utils.logger import get_logger
 from src.services.commercial_analysis_service import CommercialAnalysisService
-
-logger = get_logger("deploy")
-
+from typing import Literal
 
 @tool
-def analyze_enrollments(
-        date_str: str,
-        db_name: str,
-        team: str = None,
-        agent: str = None,
-        detailed: bool = False
+def get_commercial_analysis(
+    date_str: str,
+    analysis_type: Literal["summary", "team_performance", "agent_performance", "payment_breakdown"],
+    db_name: str = "TODOS",
 ) -> str:
     """
-    Analisa matrículas pagas em um período e retorna um relatório completo. É a ferramenta principal para todas as perguntas sobre desempenho de matrículas.
-
-    CAPACIDADES OBRIGATÓRIAS DESTA FERRAMENTA:
-    - DETALHAMENTO: Para detalhar os totais por método de pagamento (PIX, Cartão, Boleto), você DEVE definir o parâmetro 'detailed' como True.
-    - FILTROS: Esta ferramenta PODE E DEVE ser usada para filtrar por equipe ou agenciador. Use os parâmetros 'team' e 'agent' quando o usuário mencioná-los.
-    - PERÍODO: O parâmetro 'date_str' aceita datas únicas (ex: 'hoje', '2025-09-01') ou intervalos (ex: 'de 2025-09-01 a 2025-09-07').
+    Ferramenta central e unificada para todas as análises comerciais de matrículas.
 
     Parâmetros:
-    - date_str (obrigatório): A data ou período da análise. Ex: 'hoje', 'ontem', 'de 01/07/2025 a 15/07/2025'.
-    - db_name (obrigatório): A instituição ('FAMART', 'IPB' ou 'TODOS').
-    - team (opcional): O nome EXATO de uma equipe para filtrar os resultados. Ex: 'Equipe Comercial Gold'.
-    - agent (opcional): O nome EXATO de um agenciador para filtrar os resultados.
-    - detailed (opcional): Defina como True para obter o detalhamento por método de pagamento.
+    - date_str (obrigatório): O período da análise. Ex: 'hoje', 'mês passado', 'de 01/01/2025 a 15/01/2025'.
+    - analysis_type (obrigatório): O tipo de análise a ser feita. Opções:
+        - 'summary': Para perguntas sobre totais gerais (quantidade e valor total de matrículas).
+        - 'team_performance': Para perguntas sobre ranking ou desempenho de equipes.
+        - 'agent_performance': Para perguntas sobre ranking ou desempenho de agenciadores/vendedores.
+        - 'payment_breakdown': Para perguntas sobre a distribuição por método de pagamento (PIX, Cartão, Boleto).
+    - db_name (opcional, padrão 'TODOS'): A instituição ('FAMART', 'IPB' ou 'TODOS').
     """
-    logger.info(">>> INÍCIO DA EXECUÇÃO DA FERRAMENTA DE ANÁLISE DE MATRÍCULAS <<<")
-
     try:
         date_start, date_end = parse_date_range(date_str)
         if not date_start or not date_end:
-            return "Não consegui entender o período informado. Por favor, especifique a data ou o intervalo."
-
-        logger.info(
-            f"Analisando período de {date_start} a {date_end} para DB: {db_name}, Equipe: {team}, Agenciador: {agent}")
+            return "Não foi possível interpretar o período de data fornecido."
 
         service = CommercialAnalysisService()
-        analysis = service.get_enrollment_analysis(date_start, date_end, db_name, team, agent)
+        instituicao: str = f"para {db_name}" if db_name.upper() != 'TODOS' else "para o consolidado (Famart + IPB)"
+        periodo_str: str = f"de {date_start:%d/%m/%Y} a {date_end:%d/%m/%Y}"
 
-        if analysis['total_quantity'] == 0:
-            return f"Nenhuma matrícula encontrada para os filtros selecionados no período de {date_start:%d/%m/%Y} a {date_end:%d/%m/%Y}."
+        if analysis_type == "summary":
+            summary = service.get_enrollment_summary(date_start, date_end, db_name)
+            return (
+                f"📄 Resumo de Matrículas {instituicao} {periodo_str}:\n"
+                f"- Quantidade Total: {summary['total_quantity']}\n"
+                f"- Valor Total: R$ {summary['total_value']:,.2f}"
+            )
+        
+        elif analysis_type == "team_performance":
+            ranking = service.get_performance_ranking(date_start, date_end, db_name, group_by="team")
+            if ranking.empty: return "Nenhum dado de desempenho de equipe encontrado para o período."
+            return (
+                f"🏆 Ranking de Desempenho por Equipe {instituicao} {periodo_str}:\n\n"
+                f"{ranking.to_markdown(index=False)}"
+            )
 
-        instituicao = f"para a instituição {db_name}" if db_name.upper() != 'TODOS' else "para o consolidado (Famart + IPB)"
+        elif analysis_type == "agent_performance":
+            ranking = service.get_performance_ranking(date_start, date_end, db_name, group_by="agent")
+            if ranking.empty: return "Nenhum dado de desempenho de agenciador encontrado para o período."
+            return (
+                f"🏆 Ranking de Desempenho por Agenciador {instituicao} {periodo_str} (Top 10):\n\n"
+                f"{ranking.head(10).to_markdown(index=False)}"
+            )
 
-        filtros_str = []
-        if team: filtros_str.append(f"equipe '{team}'")
-        if agent: filtros_str.append(f"agenciador '{agent}'")
-        filtro_info = f" com filtro para {', '.join(filtros_str)}" if filtros_str else ""
-
-        resposta = (
-            f"Análise de matrículas de {date_start:%d/%m/%Y} a {date_end:%d/%m/%Y} {instituicao}{filtro_info}:\n"
-            f"----------------------------------------\n"
-            f"📈 **Quantidade Total:** {analysis['total_quantity']} matrículas\n"
-            f"💰 **Valor Total:** R$ {analysis['total_value']:,.2f}\n"
-        )
-
-        if detailed and analysis['payment_details']:
-            resposta += "\n**Detalhes por método de pagamento:**\n"
-            payment_map = {
-                'PIX': ['PIX - SIEAD', 'PIX – CONTA CORRENTE'],
-                'CARTÃO': ['CARTÃO - SIEAD', 'CARTÃO – SAFRA PAY', 'CARTÃO - ORENDA'],
-                'BOLETO': ['BOLETO - SIEAD']
-            }
-
-            summary = {'PIX': {'quantity': 0, 'value': 0.0}, 'CARTÃO': {'quantity': 0, 'value': 0.0},
-                       'BOLETO': {'quantity': 0, 'value': 0.0}}
-            for detail in analysis['payment_details']:
-                for category, descriptions in payment_map.items():
-                    if detail['type'] in descriptions:
-                        summary[category]['quantity'] += int(detail['quantity'])
-                        summary[category]['value'] += detail['value']
-                        break
-
-            for category, data in summary.items():
-                if data['quantity'] > 0:
-                    resposta += f"- {category}: {data['quantity']} matrículas, totalizando R$ {data['value']:,.2f}\n"
-
-        return resposta
+        elif analysis_type == "payment_breakdown":
+            breakdown = service.get_payment_breakdown(date_start, date_end, db_name)
+            if breakdown.empty: return "Nenhum dado de método de pagamento encontrado para o período."
+            return (
+                f"💳 Detalhamento por Método de Pagamento {instituicao} {periodo_str}:\n\n"
+                f"{breakdown.to_markdown(index=False)}"
+            )
+            
+        return f"Tipo de análise '{analysis_type}' desconhecido."
 
     except Exception as e:
-        logger.error(f"Erro ao executar a análise de matrículas: {e}")
-        return f"Ocorreu um erro interno ao processar sua solicitação: {e}"
+        return f"Ocorreu um erro interno ao processar a análise: {e}"

@@ -1,7 +1,18 @@
-.env
-.streamlit/secrets.toml
+# Ambiente Virtual
+.venv/
 
+# Arquivos de Configuração e Segredos
+.env
+secrets.toml
+.idea/
+.vscode/
+
+# Logs e Arquivos Gerados
+logs/
+*.log
+interactions.xlsx
+*.xlsx
+
+# Arquivos do Python
 __pycache__/
 *.pyc
-
-.vscode/

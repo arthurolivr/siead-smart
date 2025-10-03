@@ -1,48 +1,52 @@
 import pandas as pd
 from datetime import date
 from src.repositories.venda_repository import VendaRepository
+import unicodedata
 
+def strip_accents(text: str) -> str:
+    """Remove acentos de uma string."""
+    return ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
 
 class CommercialAnalysisService:
     def __init__(self):
         self.venda_repo = VendaRepository()
 
-    def get_enrollment_analysis(self, date_start: date, date_end: date, db_name: str, team: str | None = None,
-                                agent: str | None = None) -> dict:
-        """
-        Orquestra a busca e análise de dados de matrículas.
-        Retorna um dicionário estruturado com o resumo da análise.
-        """
-        # 1. Busca os dados brutos do repositório
-        raw_data = self.venda_repo.fetch_enrollments(
-            date_start=date_start,
-            date_end=date_end,
-            db_name=db_name,
-            team_name=team,
-            agent_name=agent
-        )
-
+    def get_enrollment_summary(self, date_start: date, date_end: date, db_name: str) -> dict:
+        raw_data = self.venda_repo.fetch_enrollment_data(date_start, date_end, db_name, group_by=None)
         if not raw_data:
-            return {"total_quantity": 0, "total_value": 0, "payment_details": []}
-
-        # 2. Usa o Pandas para facilitar a agregação e análise
+            return {"total_quantity": 0, "total_value": 0}
         df = pd.DataFrame(raw_data)
-
-        # 3. Calcula os totais
-        total_quantity = len(df)
-        total_value = df['pagamento_valor'].sum()
-
-        # 4. Cria o detalhamento por método de pagamento
-        payment_details_df = df.groupby('descricao').agg(
-            quantity=('pagamento_valor', 'count'),
-            value=('pagamento_valor', 'sum')
-        ).reset_index()
-
-        payment_details = payment_details_df.rename(columns={'descricao': 'type'}).to_dict('records')
-
-        # 5. Retorna o resultado estruturado
         return {
-            "total_quantity": total_quantity,
-            "total_value": total_value,
-            "payment_details": payment_details
+            "total_quantity": len(df),
+            "total_value": df['value'].sum()
         }
+
+    def get_performance_ranking(self, date_start: date, date_end: date, db_name: str, group_by: str) -> pd.DataFrame:
+        result = self.venda_repo.fetch_enrollment_data(date_start, date_end, db_name, group_by=group_by)
+        # Tratar equipes nulas (sem nome)
+        df = pd.DataFrame(result)
+        if 'name' in df.columns:
+            df['name'] = df['name'].fillna('Equipe sem nome')
+        return df
+
+    def get_payment_breakdown(self, date_start: date, date_end: date, db_name: str) -> pd.DataFrame:
+        result = self.venda_repo.fetch_enrollment_data(date_start, date_end, db_name, group_by="payment_method")
+        df = pd.DataFrame(result)
+        
+        if not df.empty:
+            def categorize_payment(method):
+                # Remove acentos e converte para maiúsculas para uma comparação robusta
+                method_normalized = strip_accents(method.upper())
+                if 'PIX' in method_normalized: return 'PIX'
+                if 'CARTAO' in method_normalized: return 'Cartão' # Agora compara com 'CARTAO'
+                if 'BOLETO' in method_normalized: return 'Boleto'
+                return 'Outros'
+
+            df['category'] = df['name'].apply(categorize_payment)
+            summary = df.groupby('category').agg(
+                quantity=('quantity', 'sum'),
+                total_value=('total_value', 'sum')
+            ).reset_index().rename(columns={'category': 'name'})
+            return summary
+            
+        return df
